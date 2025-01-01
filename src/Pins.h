@@ -1,0 +1,4 @@
+#define UP_BUTTON 2
+#define DOWN_BUTTON 3
+#define CONFIRM_BUTTON 0
+#define BACK_BUTTON 1
