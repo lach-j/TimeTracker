@@ -13,11 +13,12 @@ class TimeTracker
 {
 public:
     TimeTracker();
-    void handleButton(int button);
+    void startStopActivity(int button);
     void update();
     void display(Adafruit_SSD1306 *display);
     void setActivityName(int button, const String &name);
-    String getActivityString(int activity);
+    TrackedActivity getActivity(int activity);
+    TrackedActivity getActiveActivity();
 
 private:
     TrackedActivity activities[4];

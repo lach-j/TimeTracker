@@ -9,7 +9,7 @@ TimeTracker::TimeTracker()
     }
 }
 
-void TimeTracker::handleButton(int button)
+void TimeTracker::startStopActivity(int button)
 {
     if (button >= 0 && button < 4)
     {
@@ -91,7 +91,14 @@ void TimeTracker::setActivityName(int button, const String &name)
     }
 }
 
-String TimeTracker::getActivityString(int activity)
+TrackedActivity TimeTracker::getActivity(int activity)
 {
-    return activities[activity].name + " - " + formatDuration(activities[activity].duration);
+    return activities[activity];
+}
+
+TrackedActivity TimeTracker::getActiveActivity()
+{
+    if (activityIndex == -1)
+        return {"", 0, 0};
+    return activities[activityIndex];
 }

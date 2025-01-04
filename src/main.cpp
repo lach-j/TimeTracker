@@ -7,6 +7,8 @@
 #include "Menu.h"
 #include "Config.h"
 #include "Pins.h"
+#include "WebServerMenu.h"
+#include <WebServer.h>
 
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
@@ -62,11 +64,8 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 TimeTracker timeTracker;
 Menu menu(&display);
 Config config;
-
-WiFiServer server(80);
-String header;
-
-void drawCentreString(const char *buf, int x, int y);
+WebServer server(80);
+WebServerMenu webserver(&server);
 
 void setup()
 {
@@ -100,9 +99,14 @@ void setup()
   display.print("v1.0.0 - 2025");
   display.display();
 
-  delay(5000);
+  delay(3000);
 
   config.load();
+
+  for (int i = 0; i < 4; i++)
+  {
+    timeTracker.setActivityName(i, config.getActivityName(i));
+  }
 
   if (config.hasWiFiCredentials())
   {
@@ -117,7 +121,7 @@ void setup()
     Serial.println("WiFi connected.");
     Serial.println("IP address: ");
     Serial.println(WiFi.localIP());
-    server.begin();
+    webserver.begin();
   }
 }
 
@@ -181,7 +185,7 @@ void handleButtons()
           }
           else
           {
-            timeTracker.handleButton(i);
+            timeTracker.startStopActivity(i);
           }
         }
       }
@@ -190,81 +194,10 @@ void handleButtons()
   }
 }
 
-// Current time
-unsigned long currentTime = millis();
-// Previous time
-unsigned long previousTime = 0;
-// Define timeout time in milliseconds (example: 2000ms = 2s)
-const long timeoutTime = 2000;
-
 void loop()
 {
 
-  // TODO: ALL HACKED IN FROM EXAMPLE - TO BE CLEANED FOR REAL USAGE
-  WiFiClient client = server.available();
-
-  if (client)
-  {
-    currentTime = millis();
-    previousTime = currentTime;
-    Serial.println("New Client."); // print a message out in the serial port
-    String currentLine = "";       // make a String to hold incoming data from the client
-    while (client.connected() && currentTime - previousTime <= timeoutTime)
-    { // loop while the client's connected
-      currentTime = millis();
-      if (client.available())
-      {                         // if there's bytes to read from the client,
-        char c = client.read(); // read a byte, then
-        Serial.write(c);        // print it out the serial monitor
-        header += c;
-        if (c == '\n')
-          if (currentLine.length() == 0)
-          {
-            client.println("HTTP/1.1 200 OK");
-            client.println("Content-type:text/html");
-            client.println("Connection: close");
-            client.println();
-
-            client.println("<!DOCTYPE html><html>");
-            client.println("<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
-            client.println("<link rel=\"icon\" href=\"data:,\">");
-            client.println("<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}");
-            client.println(".button { background-color: #4CAF50; border: none; color: white; padding: 16px 40px;");
-            client.println("text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}");
-            client.println(".button2 {background-color: #555555;}</style></head>");
-
-            client.println("<body><h1>Current Times</h1>");
-            client.println("<ul>");
-            for (int i = 0; i < 4; i++)
-            {
-              client.println("<li>" + timeTracker.getActivityString(i) + "</li>");
-            }
-
-            client.println("</ul>");
-            client.println("</body></html>");
-
-            // The HTTP response ends with another blank line
-            client.println();
-            // Break out of the while loop
-            break;
-          }
-          else
-          { // if you got a newline, then clear currentLine
-            currentLine = "";
-          }
-        else if (c != '\r')
-        {                   // if you got anything else but a carriage return character,
-          currentLine += c; // add it to the end of the currentLine
-        }
-      }
-    }
-    // Clear the header variable
-    header = "";
-    // Close the connection
-    client.stop();
-    Serial.println("Client disconnected.");
-    Serial.println("");
-  }
+  webserver.update();
 
   handleButtons();
 
